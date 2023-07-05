@@ -1,4 +1,4 @@
-import { View, StyleSheet, SafeAreaView, Alert} from 'react-native'
+import { View, StyleSheet, SafeAreaView, Alert, Text, FlatList} from 'react-native'
 import { Colors } from 'react-native/Libraries/NewAppScreen'
 import Title  from  '../components/ui/Title'
 import { useState, useEffect } from 'react'
@@ -7,6 +7,7 @@ import PrimaryButton from '../components/ui/PrimaryButton';
 import Card from '../components/ui/Card';
 import InstructionText from '../components/ui/InstructionText';
 import { Ionicons } from '@expo/vector-icons';
+import GuessLogItem from '../components/game/GuessLogItem';
 
 function generateRandomBetween(min, max, exclude){
   const rndNum = Math.floor(Math.random() *(max-min) + min);
@@ -23,18 +24,21 @@ let minBoundary =1;
 let maxBoundary = 100;
 
 function GameScreen({userNumber, onGameOver}){
-  const initialGuess = generateRandomBetween(
-    1, 
-    100, 
-    userNumber
-     );
+
+  const initialGuess = generateRandomBetween(1,100,userNumber);
   const[currentGuess, setCurrentGuess] = useState(initialGuess);
+  const [guessRounds, setGuessRounds] = useState([initialGuess]);
 
   useEffect(() => {
-    if (currentGuess ===userNumber) {
-      onGameOver();
+    if (currentGuess === userNumber) {
+      onGameOver(guessRounds.length);
     }
   }, [currentGuess, userNumber, onGameOver])
+
+  useEffect(()=>{
+    minBoundary=1;
+    maxBoundary=100;
+  }, []);
 
   function nextGuessHandler(direction){ // 'lower', or 'greater'
 
@@ -54,7 +58,10 @@ function GameScreen({userNumber, onGameOver}){
       console.log(minBoundary, maxBoundary)
       const newRndNumber= generateRandomBetween(minBoundary, maxBoundary, currentGuess);
       setCurrentGuess(newRndNumber);
+      setGuessRounds(prevGuessRounds => [newRndNumber,...prevGuessRounds]) ;
   }
+
+  const guessRoundsListLength = guessRounds.length;
 
   return (
     
@@ -62,7 +69,7 @@ function GameScreen({userNumber, onGameOver}){
     <Title style={styles.title}> Opponent's Guess</Title>
     <NumberContainer>{currentGuess }</NumberContainer>
     <Card>
-      <InstructionText style={[styles, styles.InstructionText]}>Higher or Lower?</InstructionText>
+      <InstructionText style={[styles.instructionText]}>Higher or Lower?</InstructionText>
       <View style={styles.buttonsContainer}>
         <View style={styles.buttonContainer}>
           <PrimaryButton onPress={nextGuessHandler.bind(this, 'lower')}>
@@ -75,8 +82,18 @@ function GameScreen({userNumber, onGameOver}){
               </PrimaryButton>  
         </View>
     </View>
-      {/* Log Rounds */}
     </Card>
+      <View style={styles.listContainer}>
+      <FlatList 
+      data={guessRounds} 
+      renderItem={(itemData)=> 
+        <GuessLogItem 
+        roundNumber={guessRoundsListLength - itemData.index } 
+        guess={itemData.item}/>}
+        keyExtractor={(item)=> item}
+        />
+      {/* <View>{guessRounds.map(guessRound => <Text key={guessRound}>{guessRound}</Text>)}</View> */}
+      </View>
   </View> 
   )
 }
@@ -101,6 +118,10 @@ const styles = StyleSheet.create({
 
   buttonContainer: {
     flex: 1,
+  },
+  listContainer: {
+    flex: 1,
+    padding:16,
   }
   
 
