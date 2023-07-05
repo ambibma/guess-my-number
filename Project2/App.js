@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { StyleSheet, ImageBackground, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts } from 'expo-font'
@@ -6,36 +6,99 @@ import StartGameScreen from './screens/StartGameScreen';
 import GameScreen from './screens/GameScreen';
 import Colors from './constants/Colors';
 import GameOverScreen from './screens/GameOverScreen';
+import * as SplashScreen from 'expo-splash-screen';
+import * as Font from 'expo-font';
+
+SplashScreen.preventAutoHideAsync()
+  .then((result) =>
+    console.log(`SplashScreen.preventAutoHideAsync() succeeded: ${result}`),
+  )
+  .catch(console.warn)
 
 export default function App() {
-
+  
   const [userNumber, setUserNumber] = useState(null);
   const [gameIsOver, setGameIsOver] = useState(true);
+  const [guessRounds, setGuessRounds] = useState(0);
+  const [appIsReady, setAppIsReady] = useState(false);
+  
+  
+  // const [fontsLoaded] = useFonts({
+    
+  // });
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Keep the splash screen visible while we fetch resources
+        await SplashScreen.preventAutoHideAsync();
+        // Pre-load fonts, make any API calls you need to do here
+        
+        // Load fonts
+        await Font.loadAsync({
+          "open-sans": require("./assets/fonts/OpenSans-Regular.ttf"),
+          "open-sans-bold": require("./assets/fonts/OpenSans-Bold.ttf"),
+        });
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        // Tell the application to render
+        setAppIsReady(true);
+      }
+    }
+ 
+    prepare();
+  }, []);
 
-  useFonts({
-    'open-sans': require('./assets/fonts/OpenSans-Regular.ttf'),
-    'open-sans-bold': require('./assets/fonts/OpenSans-Bold.ttf'),
-  });
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      // This tells the splash screen to hide immediately! If we call this after
+      // `setAppIsReady`, then we may see a blank screen while the app is
+      // loading its initial state and rendering its first pixels. So instead,
+      // we hide the splash screen once we know the root view has already
+      // performed layout.
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+ 
+  if (!appIsReady) {
+    return null;
+  } 
+  
 
   function pickedNumberHandler(pickedNumber) {
     setUserNumber(pickedNumber);
     setGameIsOver(false);
   }
-  function gameOverHandler() {
+  function gameOverHandler(numberOfRounds) {
     setGameIsOver(true);
+    setGuessRounds(numberOfRounds);
+  }
+  function startNewGameHandler(){
+    setUserNumber(null);
+    setGuessRounds(0);
   }
 
-  let screen = <StartGameScreen onPickNumber={pickedNumberHandler}/>
+  let screen = <StartGameScreen 
+    onPickNumber={pickedNumberHandler}/>
+    
     if(userNumber){
-      screen = <GameScreen userNumber={userNumber} onGameOver={gameOverHandler}/>
+      screen = <GameScreen 
+      userNumber={userNumber} 
+      onGameOver={gameOverHandler}/>
     }
 
     if(gameIsOver && userNumber){
-      screen = <GameOverScreen />
+      screen = 
+      <GameOverScreen 
+      userNumber={userNumber} 
+      roundsNumber={guessRounds} 
+      onStartNewGame={startNewGameHandler} />
     }
 
   return (
-    <LinearGradient colors={[Colors.primary700, Colors.accent500]} style={styles.rootScreen}>
+    <LinearGradient 
+      onLayout={onLayoutRootView}
+      colors={[Colors.primary700, Colors.accent500]} style={styles.rootScreen}>
       <ImageBackground 
       source={require('./assets/images/background.png')} resizeMode="cover"
       style={styles.rootScreen}
