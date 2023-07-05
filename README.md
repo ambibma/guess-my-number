@@ -1,7 +1,5 @@
 # Goals Mobile Practice Application
-<img src='./StartGame.png' width='250'/>
-<img src='./GameScreen.png' width='250'/>
-<img src='./GameOver.png' width='250'/>
+<img src='./StartGame.png' width='250' height='250'/> <img src='./GameScreen.png' width='250' height='250' /> <img src='./GameOver.png' width='250' height='250'/>
 ---
 
 # About
